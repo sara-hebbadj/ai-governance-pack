@@ -10,6 +10,7 @@ dependencies = []  # the validator uses only the Python standard library
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]
+app = ["gradio>=5", "pandas>=2"]  # the read-only viewer in app/app.py (Hugging Face Space)
 
 [build-system]
 requires = ["setuptools>=68"]

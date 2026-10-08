@@ -8,7 +8,9 @@ The system being governed is `shop-support-agent` (project P1, a separate repo).
 
 ## 2. Demo
 
-Demo video/Space: pending — to be recorded by Sara.
+**Live demo:** [huggingface.co/spaces/sarahebbadj/ai-governance-pack](https://huggingface.co/spaces/sarahebbadj/ai-governance-pack) (no API key needed).
+
+Demo video: pending — to be recorded by Sara.
 
 The PDF exports in [`pdf/`](pdf/) are the "printable" version of the pack.
 
@@ -98,7 +100,7 @@ All tone and quality scores are **LLM-judge scores, not human scores**. Sara's g
 | P8 probe: Approvals reviewer role (DR-2) | unset, `admin` and `Team` give the team role; an AED 344 refund is refused with the default role. No sign-in yet | 5 settings, 1 refund | same |
 | P3 tests after P3's live run | **66 passed** | 66 | [evals/p3_test_run_2026-10-08_after_live_run.txt](evals/p3_test_run_2026-10-08_after_live_run.txt) |
 | Risk register and evidence index | Valid: 15 risks (1 Critical, 6 High, 7 Medium, 1 Low); **7 verified, 5 evidence pending, 3 open** (afternoon: 1 verified, 11 pending, 3 open) | 15 risks, 41 evidence items | `python -m governance_pack.validate_register` |
-| This repo's tests | **54 passed** | 54 | `pytest -q` |
+| This repo's tests | **58 passed** with the `[app]` extra (54 without it, as in CI) | 58 | `pytest -q` |
 
 ### Go / no-go
 
@@ -145,7 +147,7 @@ Real customers are still blocked by four things:
 python -m venv .venv && source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 python -m governance_pack.validate_register                # checks the register + evidence index
-pytest -q && ruff check .                                  # 54 tests, no network
+pytest -q && ruff check .                                  # 54 tests (58 with the [app] extra), no network
 python scripts/export_pdf.py                               # optional: needs pandoc + wkhtmltopdf
 ```
 
