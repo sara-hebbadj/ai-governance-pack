@@ -99,7 +99,7 @@ These results moved R01, R02, R03, R05, R10 and R12 to "Control verified".
   - The verification tests pass [E01].
   - The live agent had 0/120 conversations with `leaked_other_customer_data`, and 15/15 "another person's order" conversations right [E14, E15].
   - In P3, `gpt-6-luna` blocked 9/9 personal-data extraction attempts [E23].
-- **A weakness found and fixed.** Our probe first caught only 3 of 6 spellings of another customer's phone (DR-1). After P1's fix it caught 6 of 6, and P1 added 25 test cases [E35, E39].
+- **A weakness found and fixed.** Our probe first caught only 3 of 6 spellings of another customer's phone (DR-1). After P1's fix it caught 6 of 6, and P1 added 25 test cases, 23 of them other spellings of another customer's data [E35, E39].
 - **Still open.** What customers *type* about themselves still goes to the model provider abroad (R14).
 
 ### 3. R15: weak human oversight (High, Open)

@@ -176,7 +176,8 @@ The IDs in square brackets point to rows in [`evals/evidence_index.csv`](../eval
 | P8 probe of the leak filter: other spellings of another customer's phone, email and name | **6 of 6 caught** after the fix (3 of 6 before it) | 6 | [evals/p1_probe_2026-10-08_after_fixes.txt](../evals/p1_probe_2026-10-08_after_fixes.txt), [evals/p1_probe_2026-10-08.txt](../evals/p1_probe_2026-10-08.txt) [E35] |
 | P8 probe: answers when every model call fails | 2 of 2 safe, each starting with the disclosure (before and after the fixes) | 2 | same files [E36] |
 | P8 probe: Approvals reviewer role | unset, `admin` and `Team` all give the team role; a refund of AED 344 is refused with the default role | 5 settings, 1 refund | [evals/p1_probe_2026-10-08_after_fixes.txt](../evals/p1_probe_2026-10-08_after_fixes.txt) [E40] |
-| P3 unit and pipeline tests | 62 passed, 1 skipped (the grading-app test needs the optional Gradio install) | 63 | [evals/p3_test_run_2026-10-08.txt](../evals/p3_test_run_2026-10-08.txt) [E20, E30] |
+| P3 unit and pipeline tests after P3's live run (17:43 snapshot) | **66 passed**, 0 failed | 66 | [evals/p3_test_run_2026-10-08_after_live_run.txt](../evals/p3_test_run_2026-10-08_after_live_run.txt) [E20, E30] |
+| P3 tests on the earlier build (15:37 snapshot) | 62 passed, 1 skipped (the grading-app test needs the optional Gradio install) | 63 | [evals/p3_test_run_2026-10-08.txt](../evals/p3_test_run_2026-10-08.txt) |
 | P3 test-set validation | 0 problems | 225 items (180 quality + 45 red-team) | `python -m evals.stats` on a P3 snapshot [E21] |
 
 ### 8.3 Model comparison and red-team on bare models (P3), 8 October 2026
@@ -217,7 +218,7 @@ The IDs in square brackets point to rows in [`evals/evidence_index.csv`](../eval
 
 **Found by this governance review and fixed in P1 on 8 October 2026 (evening)** (details in [06_red_team_findings.md](06_red_team_findings.md)):
 
-- **DR-1 (fixed, re-tested):** the leak filter missed another customer's phone number written without spaces, in local format or with Arabic-Indic digits (3 of 6 variants caught). After the fix the same probe catches 6 of 6, and P1 has 25 committed test cases for other spellings [E35, E39].
+- **DR-1 (fixed, re-tested):** the leak filter missed another customer's phone number written without spaces, in local format or with Arabic-Indic digits (3 of 6 variants caught). After the fix the same probe catches 6 of 6, and P1 has 25 committed test cases: 23 other spellings of another customer's data, the six-variant probe check and a no-false-alarm check on the customer's own data [E35, E39].
 - **DR-2 (partly fixed):** the approver no longer chooses their own role on screen; the role and reviewer ID come from configuration, and unknown roles get the team role [E40]. **There is still no sign-in**, so the log shows a configured ID, not a verified person. This blocks real customers.
 - **DR-3 (fixed):** the disclosure test now covers Arabic, English and French, and the banner is in all three languages [E08]. The Arabic and French banner text still needs a native speaker's check.
 - **DR-4 (fixed):** three committed P1 tests now cover a model outage [E38]. Writing them exposed a bug, which P1 fixed (the `check` node dropped the intent-fallback warning).

@@ -123,7 +123,7 @@ This file is for Sara. Use it to practise explaining the pack out loud before an
 9. **Your red-team found something. Walk me through it.**
    - **What happened (DR-1).** I called P1's leak filter directly with six versions of another customer's data, and it caught 3. It missed the phone number without spaces, in local format and with Arabic-Indic digits, because it matched exact strings.
    - **Why the risk was low:** other customers' data never reaches the model.
-   - **The fix:** P1 now compares normalised forms. My unchanged probe then caught 6 of 6, and P1 added 25 test cases.
+   - **The fix:** P1 now compares normalised forms. My unchanged probe then caught 6 of 6, and P1 added 25 test cases (23 other spellings of another customer's data, the six-variant probe check and a no-false-alarm check).
    - **A second example (RT-4).** The live run found one angry-customer script that was never handed over. We recorded it as failed and did not tune the prompt on that script.
 
 10. **What are the limits of this pack?**
