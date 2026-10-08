@@ -76,21 +76,52 @@ def test_relative_links_and_anchors_resolve(path):
     assert broken == [], f"broken links in {path.name}: {broken}"
 
 
-def passed_tests_in_log(project: str) -> set[str]:
-    lines = TEST_LOGS[project].read_text(encoding="utf-8").splitlines()
-    return {line.split("::")[1].split()[0] for line in lines if "::" in line and " PASSED" in line}
+LOG_IN_NOTES = re.compile(r"log: (evals/\S+\.txt)")
+
+
+def log_for(row: dict[str, str]) -> Path:
+    """The log named in the row's notes ('log: evals/...txt'), else the project's first log."""
+    match = LOG_IN_NOTES.search(row["notes"])
+    return REPO / match.group(1) if match else TEST_LOGS[row["project"]]
+
+
+def logged_test_name(line: str) -> str:
+    """'tests/x.py::test_a[ar-hello] PASSED [ 5%]' -> 'test_a' (parameters dropped)."""
+    return line.split("::")[1].split("[")[0].split()[0]
+
+
+def passed_tests_in_log(log: Path) -> set[str]:
+    """Tests with at least one PASSED line and no FAILED/ERROR line (all parameters must pass)."""
+    lines = [line for line in log.read_text(encoding="utf-8").splitlines() if "::" in line]
+    passed = {logged_test_name(line) for line in lines if " PASSED" in line}
+    failed = {logged_test_name(line) for line in lines if " FAILED" in line or " ERROR" in line}
+    return passed - failed
 
 
 def test_every_cited_passing_test_is_in_the_recorded_log():
-    """If the evidence index says a P1/P3 test passed, the saved pytest log must show it."""
+    """If the evidence index says a P1/P3 test passed, the saved pytest log it names must show it."""
     with (REPO / "evals" / "evidence_index.csv").open(encoding="utf-8") as f:
         rows = [r for r in csv.DictReader(f) if r["kind"] == "deterministic_test" and r["status"] == "passed"]
     assert rows, "expected some passed deterministic tests"
     for row in rows:
-        logged = passed_tests_in_log(row["project"])
+        log = log_for(row)
+        assert log.is_file(), f"{row['evidence_id']}: log file {log.name} does not exist"
+        logged = passed_tests_in_log(log)
         cited = [name.strip() for name in row["check"].split(";")]
         missing = [name for name in cited if name not in logged]
-        assert missing == [], f"{row['evidence_id']}: not PASSED in the log: {missing}"
+        assert missing == [], f"{row['evidence_id']}: not PASSED in {log.name}: {missing}"
+
+
+def test_parametrised_test_counts_as_passed_only_if_every_case_passed(tmp_path):
+    log = tmp_path / "log.txt"
+    log.write_text(
+        "tests/t.py::test_a[ar-x] PASSED [ 1%]\n"
+        "tests/t.py::test_a[en-y] PASSED [ 2%]\n"
+        "tests/t.py::test_b[ar-x] PASSED [ 3%]\n"
+        "tests/t.py::test_b[fr-z] FAILED [ 4%]\n",
+        encoding="utf-8",
+    )
+    assert passed_tests_in_log(log) == {"test_a"}
 
 
 def test_github_slug_matches_githubs_rules():

@@ -98,7 +98,7 @@ A data subject can object to decisions that come from automated processing, incl
 
 ### 3.6 Sending data abroad: the model provider (Arts. 22 and 23)
 
-**The issue.** The assistant sends the chat text to a model through OpenRouter. The servers are probably outside the UAE, so this is a **cross-border transfer**.
+**The issue.** The assistant sends the chat text to a model through OpenRouter. The servers are probably outside the UAE, so this is a **cross-border transfer**. On 8 October 2026 the evaluated configuration sent it to `openai/gpt-6-luna` (OpenAI) through OpenRouter. `MODEL_MAIN` is set to `anthropic/claude-sonnet-5.5` (Anthropic); see the [system card, section 5](01_system_card.md#5-models). Each company in that chain needs data-processing terms. The judge model (`google/gemini-3.8-flash`) is used only in evaluation, on synthetic data.
 
 **The rules.**
 

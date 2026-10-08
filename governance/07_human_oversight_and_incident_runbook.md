@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Lumi Skin customer-service assistant (P1, `shop-support-agent`) |
-| **Date** | 8 October 2026 |
+| **Date** | 8 October 2026; go/no-go re-evaluated the same evening after the live runs |
 | **Status** | Design for a future launch. It has not been rehearsed. Lumi Skin is fictional and has no real customers. |
 
 > This is not legal advice. Roles are written as job roles, not names. A real company puts its own names and phone numbers in a private copy, not in a public repo.
@@ -17,7 +17,7 @@ The assistant may **talk** and **look things up**. It may not **decide** anythin
 | Action | Who can trigger it | Who must approve | Enforced by | Evidence |
 |---|---|---|---|---|
 | Show order status and tracking | Assistant | Nobody, but the order ID and the email must match first | `agent.verify`, `ShopData.verify` | E01 |
-| Policy answers, product advice | Assistant | Nobody | Prompt rules 1 and 5 | E27 and E24 (pending) |
+| Policy answers, product advice | Assistant | Nobody | Prompt rules 1 and 5 | E27 (judge-scored 52/54, failed on the strict reading) and E24 (9/9 on bare models); P1 agent not yet tested on medical advice (E41) |
 | Add a CRM note, open a ticket | Assistant | Nobody (internal only) | MCP tools `add_note`, `create_ticket` | P1 `tests/test_mcp_server.py` |
 | Refund ≤ AED 200 | Assistant **queues** it | **Customer-care team member** | `CrmStore.decide` | E05 |
 | Refund > AED 200 | Assistant **queues** it | **Customer-care supervisor** only | `crm.approval_level`, `CrmStore.decide` (refuses the team role) | E05 |
@@ -25,7 +25,7 @@ The assistant may **talk** and **look things up**. It may not **decide** anythin
 | Erasure, data export, privacy complaint | Assistant opens a ticket | **Data protection lead** | Process (not built into P1) | — |
 | Switching the assistant off | — | **Engineering on-call** or the **Product owner**. Anyone in customer care can *request* it. | Section 5 | E32 |
 
-**Known gap (DR-2).** In the demo, the approver picks their own role, and the log records "demo reviewer". Before real use, the Approvals tab needs **sign-in**, the role must come from the account, and the log must store the real reviewer ID.
+**Known gap (DR-2, partly fixed on 8 October 2026).** The approver no longer picks their own role on screen. The role and reviewer ID now come from the deployment's configuration (`APPROVER_ROLE`, `APPROVER_ID`; an unknown role counts as "team") [E40]. But there is **no sign-in**: whoever can open a deployment's Approvals tab acts with that deployment's role, and the log stores the configured ID, not a verified person. Before real customers, the Approvals tab needs sign-in, the role must come from the account, and the log must store the signed-in reviewer's ID.
 
 ### Approver checklist (before you click Approve)
 
@@ -103,7 +103,7 @@ Each playbook has five steps: **detect → contain → investigate → notify �
 
 **D. Model or provider outage (SEV-2, risk R11)**
 
-- The agent already falls back to fixed templates and keyword rules (probe E36).
+- The agent already falls back to fixed templates and keyword rules (probe E36; committed P1 tests E38).
 - If the outage lasts more than 30 minutes, check the error lines in the traces and consider level 1.
 - Tell the customer-care team that answers are simpler for now.
 
@@ -134,18 +134,54 @@ Each playbook has five steps: **detect → contain → investigate → notify �
 
 ## 8. Launch checklist (go / no-go)
 
-The decision on 8 October 2026 is **No-go**. The list below explains why.
+### Decision on 8 October 2026 (evening), after the live runs
 
-- [ ] Live P1 agent eval run: **0 policy violations in 120 conversations**, with results per language (E14–E18)
-- [ ] P3 red-team on the chosen model, and every not-blocked attack reviewed by hand (E22–E26)
-- [ ] DR-1 fixed: the leak filter catches all 6 variants
-- [ ] DR-2 fixed: sign-in and real roles on the Approvals tab
-- [ ] Disclosure tested in Arabic, English and French; banner translated (DR-3)
+**No-go for real customers. Go for a supervised internal pilot**, under the conditions below. The first decision, taken that afternoon before any model was called, was a plain **No-go**.
+
+**Why it is still No-go for real customers.**
+
+- **Nobody signs in to approve.** The Approvals tab has no sign-in (DR-2 is only partly fixed, R15 Open). The audit log cannot prove *who* approved a payment, and the AED 200 supervisor rule depends on how a deployment is configured.
+- **Personal data would go abroad unprotected.** Real chats would send customers' personal data to a model provider abroad, with no masking and no counsel view (R14 Open). Ticket text is not redacted and has no enforced retention (R13 Open).
+- **No person has checked the scores.** Every quality, tone and red-team verdict comes from an LLM judge. Sara's grades (E19, E29) and the native-speaker review of the Arabic and French texts are still missing.
+- **One handover was missed.** One angry-customer script was not handed over in any language (RT-4, E16), and it is not fixed yet.
+- **Small, known test sets.** The evidence comes from scripted sets written by the same family of coding agent, each run once: 120 P1 conversations, 225 P3 items.
+- **Nothing is rehearsed or reviewed yet.** Approvers are not briefed (EU AI Act Art. 4), the runbook has not been rehearsed, and counsel has not reviewed the EU memo or the UAE notes.
+
+**Why a supervised internal pilot is now justified.**
+
+- **The live agent broke no rule.** It had **0 policy violations in 120 conversations** (40 per language), on `openai/gpt-6-luna` [E14].
+- **It handled the hard cases.** It reached the expected outcome in all 15 prompt-injection and all 15 "another person's order" conversations [E15]. Every refund and address-change decision was correct (45/45) [E37].
+- **The chosen model resisted the attacks.** It blocked all 45 P3 red-team attacks (judge verdicts) [E22–E26].
+- **Three findings are closed.** DR-1, DR-3 and DR-4 are fixed and re-tested [E35, E39, E08, E38].
+- **An internal pilot avoids every open blocker.** It uses no real customer data, and its testers and approvers are known staff. None of the open blockers above is triggered.
+
+**Conditions for the internal pilot.**
+
+1. **Testers.** Only staff (customer care, including native Arabic and French speakers) act as customers, using the synthetic Lumi Skin orders. **No real customer data** is typed into the chat. Testers are told what the assistant is (Art. 50 disclosure stays on).
+2. **Configuration.** The configuration with full evidence: `openai/gpt-6-luna` for both roles (as in the public demo). Switching replies to `anthropic/claude-sonnet-5.5`, or any other model or prompt change, needs the full 120-conversation run first (section 7).
+3. **Approvals.** The Approvals tab runs on an internal deployment only. The supervisor deployment (`APPROVER_ROLE=supervisor`) is used only by the named supervisor, and `APPROVER_ID` is set to that person's ID. The approval log is kept.
+4. **Briefing.** Approvers and testers get the 30-minute briefing (Art. 4 AI literacy), and attendance is recorded.
+5. **Daily review.** Customer care reviews every conversation that should have been handed over (RT-4), plus a sample of others, every day.
+6. **Grading.** Sara grades the 20 P1 and 60 P3 judge samples (E19, E29) during the pilot. The native-speaker reviewers check the Arabic and French templates and banner.
+7. **Rehearsal.** The SEV-1 data-leak playbook is rehearsed once as a tabletop exercise, and switch-off level 1 is tried once.
+8. **Stop rule.** Any SEV-1 or SEV-2 event (section 3) stops the pilot until it is fixed and re-tested.
+
+### Checklist for real customers
+
+- [x] Live P1 agent eval run: **0 policy violations in 120 conversations**, with results per language (E14–E18). Done 8 October 2026 on `openai/gpt-6-luna`.
+- [x] P3 red-team on the chosen model, and every not-blocked attack reviewed by hand (E22–E26). `openai/gpt-6-luna` blocked 45/45 (judge verdicts), so it has no not-blocked attack to review. Haiku's one open check (RT-5) does not affect the chosen model.
+- [x] DR-1 fixed: the leak filter catches all 6 variants (E35, E39)
+- [ ] DR-2 fixed: sign-in and real roles on the Approvals tab. **Partly done:** the role comes from configuration, but there is no sign-in yet (E40).
+- [x] Disclosure tested in Arabic, English and French; banner translated (DR-3, E08). The native-speaker check of the banner is part of the review below.
+- [ ] Missed handover fixed and re-tested on new angry-customer scripts (RT-4, E16)
+- [ ] Full P1 agent tested on unsafe-advice and discount attacks (E41)
+- [ ] LLM judge checked against Sara's grades (E19, E29); the 2 policy answers the judge failed (E27) checked by a person
 - [ ] Emails and phone numbers masked before model calls, or counsel approves (R14); retention set (R13)
 - [ ] Arabic and French texts reviewed by a native speaker (Sara)
 - [ ] Approvers briefed (EU AI Act Art. 4 AI literacy); attendance recorded
 - [ ] This runbook rehearsed once as a tabletop exercise (SEV-1 data leak)
 - [ ] Counsel review of the EU memo and the UAE notes
+- [ ] The internal pilot completed without a SEV-1 or SEV-2 event
 
 ## 9. Logs to keep
 

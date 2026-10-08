@@ -10,19 +10,30 @@ This file is for Sara. Use it to practise explaining the pack out loud before an
 
 - Show the "can / cannot" table, and the design choice: the model understands messages and writes replies, while plain code decides tools, identity checks and approvals.
 - Point at section 7: the exact disclosure text in Arabic, English and French.
-- Point at section 8: the measured rows (41/41 P1 tests; rules baseline 0/120 violations) and the "pending live run" rows.
+- Point at section 8:
+  - the live agent on `openai/gpt-6-luna` had **0/120** violations and 97.5% task success;
+  - the same model as a plain chatbot, without the code guards, broke a rule in 120/120 conversations;
+  - P3's red-team: 45/45 attacks blocked.
+- Say clearly that the tone and quality scores come from an LLM judge, not from people.
 
 **Minute 3–5. The risk register** (`governance/risk_register.csv` and `02_risk_register_summary.md`).
 
 - Explain the rating rule: Low = 1, Medium = 2, High = 3, likelihood × impact.
 - Go through the top 3 risks:
-  - **R02 prompt injection (Critical).** The control is that the model cannot approve anything. The proof is a test with a fake model that *obeys* the attack: the refund still waits for a supervisor.
-  - **R01 cross-customer leak (High).** Verification happens first. Our own probe found that the second-layer filter misses phone-number variants (DR-1).
-  - **R15 weak oversight (High, Open).** In the demo the approver picks their own role.
+  - **R02 prompt injection (Critical, verified for known attacks).** The model cannot approve anything. The proof:
+    - a test with a fake model that *obeys* the attack: the refund still waits for a supervisor;
+    - 15/15 live injection conversations right;
+    - 18/18 P3 injection and jailbreak attacks blocked.
+  - **R01 cross-customer leak (High, verified).** Verification happens first. Our own probe found that the second-layer filter missed phone-number variants (DR-1). P1 fixed it, and the re-test caught 6 of 6.
+  - **R15 weak oversight (High, Open).**
+    - The on-screen role choice is gone, but there is no sign-in yet.
+    - One angry-customer script was not handed over to a person (RT-4).
 
 **Minute 5–6. The evidence index and the validator.**
 
-- Open `evals/evidence_index.csv`. Show that a "pending live run" row has an empty result column.
+- Open `evals/evidence_index.csv`.
+  - Show that a "not run yet" row (E19, E29, E41) has an empty result column.
+  - Show the two `failed` rows (E16, E27), and explain why they stay failed.
 - Run `python -m governance_pack.validate_register`.
 - Then show the honesty rule: put a number in a pending row and run it again. It fails.
 
@@ -40,13 +51,16 @@ This file is for Sara. Use it to practise explaining the pack out loud before an
 
 **Minute 8–9. NIST and red-team** (`04_…`, `06_…`).
 
-- NIST: the strongest function is Measure for the code guards; the weakest is Measure for live model behaviour.
+- NIST: the strongest function is Measure for the code guards, now backed by live runs. The weakest is human validation: no person has checked the LLM judge yet.
 - Red-team: walk through one row in the format "what happened → fix → re-test".
 
 **Minute 9–10. Runbook and next steps** (`07_…`).
 
 - Who approves what, and the three switch-off levels. Level 1 is to remove the API key, and the app falls back to rules-only.
-- The launch checklist says **No-go** today. Explain why: there is no live eval yet, and DR-1 and DR-2 are still open.
+- The decision on 8 October 2026 (evening) is **No-go for real customers; Go for a supervised internal pilot.**
+  - **Why real customers are still blocked:** there is no sign-in for approvers, personal data goes abroad unmasked, no human has checked the judge, and one handover miss is still open.
+  - **Why an internal pilot is fine:** staff testers and synthetic data use no real personal data, and the live evidence is strong for the code-enforced controls.
+  - In the afternoon, before any model was called, the decision was a plain No-go.
 
 ## 2. Ten interview questions with short model answers
 
@@ -57,20 +71,33 @@ This file is for Sara. Use it to practise explaining the pack out loud before an
 
 2. **How does P1 meet Article 50(1)?**
    - There are two fixed-text layers: a page banner, and a first reply added by code that says "I'm Lumi Skin's AI assistant, not a human" in the customer's language.
-   - The evidence is a P1 test (French path), the rules baseline with 0/120 missing disclosures, and our probe for Arabic and English.
-   - The gaps are a translated banner and reminders in complaint contexts.
+   - **The evidence:**
+     - a P1 test in all three languages;
+     - the live agent with 0/120 missing disclosures;
+     - the plain-LLM baseline, which **forgot the disclosure in 120/120** conversations without the code. That is why the disclosure is added by code.
+   - **The gaps:** reminders in complaint contexts, an accessibility check, and a native speaker's check of the Arabic and French banner.
 
 3. **What are your top 3 risks, and what evidence shows the controls work?**
-   - **Prompt injection.** A test uses a fake model that obeys the attack, and the refund still waits for a supervisor.
-   - **Cross-customer leak.** The verification tests pass, and the baseline had 0/120 leaks. But our probe found the leak filter catches only 3 of 6 phone formats.
-   - **Weak oversight.** The supervisor rule is tested, but in the demo anyone can pick the supervisor role, so that risk is Open.
-   - In every case, the live model evaluation is still pending.
+   - **Prompt injection.**
+     - A test uses a fake model that obeys the attack, and the refund still waits for a supervisor.
+     - Live: 15/15 injection conversations right, 0/120 violations.
+     - P3: 18/18 injection and jailbreak attacks blocked by `gpt-6-luna`.
+   - **Cross-customer leak.**
+     - The verification tests pass, and the live run had 0/120 leaks.
+     - Our probe first found the leak filter caught only 3 of 6 phone formats. After P1's fix: 6 of 6.
+   - **Weak oversight.**
+     - The supervisor rule is tested, and the on-screen role choice is gone.
+     - But there is no sign-in, and one angry customer was not handed over, so that risk is Open.
+   - **Limits:** small scripted sets, one run, and judge verdicts that no person has checked yet.
 
 4. **What would you need from engineering before launch?**
-   - The live agent eval with 0 violations in 120 conversations, and the P3 red-team on the chosen model.
-   - Fixes for the leak-filter variants and sign-in on the Approvals tab.
-   - Disclosure tests in all three languages, and an outage test.
-   - Email and phone masking before model calls.
+   - **Done on 8 October:** the live eval (0/120), the P3 red-team, the leak-filter fix, disclosure tests in three languages, and outage tests.
+   - **Still needed:**
+     - sign-in on the Approvals tab;
+     - a fix for the missed handover, tested on new scripts;
+     - P3's unsafe-advice and discount attacks run through the full agent;
+     - email and phone masking before model calls;
+     - an on/off switch and alerts.
 
 5. **How do you keep the documents current when the model changes?**
    - The change rule in the runbook. A new model ID means re-running the P1 eval and the P3 red-team, updating the model table and the evidence rows, and running the validator.
@@ -79,7 +106,9 @@ This file is for Sara. Use it to practise explaining the pack out loud before an
 6. **Why separate "control built" from "control verified"?**
    - A control in code is not proof that it works with the real model.
    - "Verified" needs every linked evidence item to have actually run and passed, and the validator enforces that.
-   - Only one risk (R04, duplicate payments) is verified today, because its evidence is fully deterministic.
+   - In the afternoon only R04 was verified. After the live runs, 7 of 15 are verified.
+   - R08 and R09 are not verified: P3 tested them on bare models only, and I want a test through the full agent first.
+   - R06 is not verified: the judge failed 2 policy answers, and a person has not checked them yet.
 
 7. **What does the NIST AI RMF add if it is voluntary?**
    - It gives a checklist structure (Govern, Map, Measure, Manage) that US companies and auditors recognise.
@@ -92,11 +121,13 @@ This file is for Sara. Use it to practise explaining the pack out loud before an
    - Sending chat text to a foreign model provider is a cross-border transfer. The Executive Regulations are still pending, so we build to the law's text and ask counsel.
 
 9. **Your red-team found something. Walk me through it.**
-   - DR-1. I called P1's leak filter directly with six versions of another customer's data, and it caught 3. It missed the phone number without spaces, in local format and with Arabic-Indic digits, because it matches exact strings.
-   - The risk is low, because other customers' data never reaches the model. The fix is to normalise digits as P3 already does, and then the re-test should catch 6 of 6.
+   - **What happened (DR-1).** I called P1's leak filter directly with six versions of another customer's data, and it caught 3. It missed the phone number without spaces, in local format and with Arabic-Indic digits, because it matched exact strings.
+   - **Why the risk was low:** other customers' data never reaches the model.
+   - **The fix:** P1 now compares normalised forms. My unchanged probe then caught 6 of 6, and P1 added 25 test cases.
+   - **A second example (RT-4).** The live run found one angry-customer script that was never handed over. We recorded it as failed and did not tune the prompt on that script.
 
 10. **What are the limits of this pack?**
-    - No live model numbers yet.
+    - The live numbers come from small scripted sets, run once, and the quality and tone scores come from an LLM judge that no person has checked yet.
     - Not reviewed by a lawyer.
     - Two facts rest on secondary sources.
     - The same family of coding agent built P1 and reviewed it, so a human reviewer would make it stronger.
@@ -110,8 +141,8 @@ This file is for Sara. Use it to practise explaining the pack out loud before an
    - Note: the register currently allows 10–15 risks, so you must also raise that limit in `validate_register.py` (and in its test). Ask yourself whether that limit should exist at all.
 
 2. **Try to cheat, and get caught.**
-   - In `evals/evidence_index.csv`, put "95%" in the `result` column of E14, which is still `pending live run`. Run `pytest -q`; it fails.
-   - Then change R10's status to `Control verified`. It fails again, because E14 has not passed.
+   - In `evals/evidence_index.csv`, put "0.8" in the `result` column of E29, which is still `not run yet`. Run `pytest -q`; it fails.
+   - Then change R07's status to `Control verified`. It fails again, because E19 and E29 have not passed.
    - Undo both changes. This is the "never invent results" rule as code.
 
 3. **Add a governance rule to the validator.**

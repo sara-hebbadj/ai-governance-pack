@@ -44,6 +44,7 @@ flowchart LR
 | `src/governance_pack/validate_register.py` | A standard-library checker | It enforces the agreed column names, the allowed values, the likelihood × impact rating, and the honesty rules: no result without a run, and no "Control verified" unless the evidence passed |
 | `tests/` | pytest | It proves that the checker catches each kind of mistake, and that the real files pass |
 | `pdf/` | PDF exports of the documents (made with `scripts/export_pdf.py`) | Some reviewers want a file they can attach or print |
+| `scripts/probe_p1.py`, `scripts/extract_p1_live.py`, `scripts/extract_p3_live.py` | Direct probes of three P1 guardrails (DR-1, DR-2, DR-4), and two readers that print the numbers this pack cites from P1's and P3's saved live-run files. None of them calls a model, and none runs in CI. | The saved outputs in `evals/` (each with the SHA-256 of its source files) let a reviewer check every live number without re-running the models |
 
 ## Why the evidence lives in another repo
 

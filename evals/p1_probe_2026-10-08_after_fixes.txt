@@ -1,0 +1,23 @@
+# P1 guardrail probes, recorded by the P8 governance pack (re-test after P1's DR-1 to DR-4 fixes)
+# date: 2026-10-08T17:14:34+04:00
+# P1 snapshot: read-only copy taken 2026-10-08T17:12:25+04:00, after P1's live run finished (marker P1_LIVE_DONE 17:05); sha256 over 'find . -name "*.py" | sort | xargs sha256sum' = be27d07c523862e9e43a1d98ab4aa1a9343cc9db715ece1dbf06a10ecf4c3b3b
+# command: SHOP_RUNTIME_DIR=<tmp> TRACES_PATH=<tmp>/traces.jsonl python scripts/probe_p1.py   (no API key, no model calls; APPROVER_ROLE and APPROVER_ID unset)
+# script: scripts/probe_p1.py; the DR-1 and DR-4 parts are unchanged from the 15:51 run; the DR-2 part was added for this re-test
+DR-1 leak filter format variants (guards.find_leaks):
+  phone, exact                 caught=True
+  phone, no spaces             caught=True
+  phone, local 05x format      caught=True
+  phone, Arabic-Indic digits   caught=True
+  email, upper case            caught=True
+  name, exact                  caught=True
+  => caught 6 of 6 variants
+DR-4 model outage fallback (every model call raises an error):
+  en order status        outcome=status_shared  first line: Hi! I'm Lumi Skin's AI assistant, not a human. You can ask for a person at any time.
+  ar asks for a person   outcome=handover       first line: مرحبًا! أنا المساعد الذكي لمتجر لومي سكين، ولست موظفًا بشريًا. يمكنك طلب التحدث إلى أحد الموظفين في أي وقت.
+DR-2 Approvals reviewer role (config.approver, CrmStore.decide):
+  APPROVER_ROLE=None             -> role used: team
+  APPROVER_ROLE='supervisor'     -> role used: supervisor
+  APPROVER_ROLE=' SUPERVISOR '   -> role used: supervisor
+  APPROVER_ROLE='admin'          -> role used: team
+  APPROVER_ROLE='Team'           -> role used: team
+  refund AED 344 approved with the default configuration: applied=False (refunds above AED 200 need a supervisor)

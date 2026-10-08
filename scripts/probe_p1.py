@@ -1,4 +1,4 @@
-"""Probe two P1 guardrails directly, without a model. Evidence for red-team findings DR-1 and DR-4.
+"""Probe three P1 guardrails directly, without a model. Evidence for red-team findings DR-1, DR-2 and DR-4.
 
 This is NOT part of CI: it needs P1 (`shop-support-agent`) installed in the same environment:
 
@@ -11,6 +11,7 @@ TRACES_PATH point somewhere else (as above).
 
 from __future__ import annotations
 
+import os
 import sys
 
 try:
@@ -21,6 +22,11 @@ try:
     from shop_support_agent.guards import find_leaks
 except ImportError:
     sys.exit("shop-support-agent (P1) is not installed. See the docstring at the top of this file.")
+
+try:  # added to P1 by the DR-2 fix; older P1 versions do not have it
+    from shop_support_agent.config import approver
+except ImportError:
+    approver = None
 
 ARABIC_INDIC = str.maketrans("0123456789", "٠١٢٣٤٥٦٧٨٩")
 
@@ -70,12 +76,43 @@ def probe_outage(shop) -> None:
         print(f"  {label:22s} outcome={state['outcome']:14s} first line: {first_line}")
 
 
+def probe_approver_role(shop) -> None:
+    """DR-2: where does the Approvals reviewer's role come from, and what happens to a large refund?"""
+    if approver is None:
+        print("  config.approver() not found: this P1 version has no configured reviewer role")
+        return
+    saved = {k: os.environ.pop(k, None) for k in ("APPROVER_ROLE", "APPROVER_ID")}
+    try:
+        for value in (None, "supervisor", " SUPERVISOR ", "admin", "Team"):
+            if value is None:
+                os.environ.pop("APPROVER_ROLE", None)
+            else:
+                os.environ["APPROVER_ROLE"] = value
+            print(f"  APPROVER_ROLE={value!r:16s} -> role used: {approver()['role']}")
+        os.environ.pop("APPROVER_ROLE", None)  # default configuration
+        store = CrmStore(None, shop)
+        large = (o for o in shop.orders.values() if o["status"] == "delivered" and int(o["total_aed"]) > 200)
+        order = next(large)
+        amount = int(order["total_aed"])
+        item = store.request_refund(order["order_id"], order["customer_id"], amount, "unopened")
+        who = approver()
+        result = store.decide(item["approval_id"], True, reviewer=who["id"], role=who["role"])
+        print(f"  refund AED {amount} approved with the default configuration: "
+              f"applied={result.get('ok')} ({result.get('error', result.get('status'))})")
+    finally:
+        for key, value in saved.items():
+            if value is not None:
+                os.environ[key] = value
+
+
 def main() -> int:
     shop = load_shop_data()
     print("DR-1 leak filter format variants (guards.find_leaks):")
     probe_leak_filter(shop)
     print("DR-4 model outage fallback (every model call raises an error):")
     probe_outage(shop)
+    print("DR-2 Approvals reviewer role (config.approver, CrmStore.decide):")
+    probe_approver_role(shop)
     return 0
 
 

@@ -70,22 +70,21 @@ If that happens, the timing is now different. The Digital Omnibus moved the star
 
 **How P1 does it.** P1 uses two layers of fixed text. Neither is written by the model, so neither can be "forgotten" by it.
 
-1. **A page banner** (`app/app.py`): "You are chatting with an AI assistant. Refunds and address changes wait for a human…"
+1. **A page banner** (`app/app.py`), in English, Arabic and French: "You are chatting with an AI assistant. Refunds and address changes wait for a human…"
 2. **A first-reply disclosure** added by code (`guards.disclosure()`), in the customer's language. The English version reads: "Hi! I'm Lumi Skin's AI assistant, not a human. You can ask for a person at any time." The Arabic and French versions say the same.
 
 **Evidence** (IDs from the [evidence index](../evals/evidence_index.csv)):
 
-- the P1 test `test_first_reply_discloses_ai_assistant` passed on 2026-10-08, for the French path [E08];
+- the P1 test `test_first_reply_discloses_ai_assistant` passed on 2026-10-08 for Arabic, English and French, and a test checks the three-language banner [E08];
 - the rules-only baseline had **0 of 120** conversations without the disclosure (40 per language) [E13];
-- a P8 probe found that Arabic and English agent replies start with the disclosure even when the model is down [E36];
-- the live agent run is **pending** [E14].
+- the **live agent** (`openai/gpt-6-luna`, 8 October 2026) had **0 of 120** conversations with any violation, including `missing_ai_disclosure` [E14]. The same model as a plain chatbot, without the code that adds the disclosure, left it out in **120 of 120** (`shop-support-agent/evals/results/plain_cheap_2026-10-08_summary.csv`). Disclosure by code, not by prompt, is what makes it reliable;
+- a P8 probe found that Arabic and English agent replies start with the disclosure even when the model is down [E36].
 
 The exact texts are in the [system card](01_system_card.md#7-ai-disclosure-what-the-customer-sees).
 
 **Gaps to close before an EU launch.**
 
-- **Translate the banner.** It is in English only.
-- **Test all three languages.** The disclosure test covers French only (finding DR-3 in the [red-team findings](06_red_team_findings.md)).
+- **Banner and tests in three languages: done** on 8 October 2026 (finding DR-3 in the [red-team findings](06_red_team_findings.md)). A native speaker still needs to check the Arabic and French banner lines.
 - **Repeat the disclosure** when a conversation becomes a complaint or a refund request. The guidance expects reminders in complaint contexts.
 - **Check accessibility.** Screen readers must announce the disclosure. Arabic must render right-to-left.
 - **Keep the "AI assistant" label next to the brand name.** "Lumi Skin's AI assistant" is good; a human-sounding name on its own would not be.
@@ -160,8 +159,8 @@ Breaking Article 50 can lead to fines of up to **EUR 15 million or 3% of total w
 ## 8. What we need from engineering before an EU launch
 
 1. Keep the disclosure test in CI. The release is blocked if the disclosure is missing in any of the three languages.
-2. Translate the page banner and keep it visible next to the chat input. Add a reminder when a conversation turns into a complaint or refund request (section 5.1). Add a test for each.
-3. Write down the model IDs and the dates each one was used, and record any model change in the [system card](01_system_card.md). Every model change triggers the change rule in the runbook.
+2. Keep the page banner (now in Arabic, English and French) visible next to the chat input. Add a reminder when a conversation turns into a complaint or refund request (section 5.1). Add a test for each.
+3. Write down the model IDs and the dates each one was used, and record any model change in the [system card](01_system_card.md#5-models). This was first done for the live evaluation of 8 October 2026. Every model change triggers the change rule in the runbook.
 4. Collect the vendors' written answers on marking text outputs (section 5.2).
 5. Keep the approval audit log and the traces for the retention period in the runbook.
 
